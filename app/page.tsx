@@ -37,6 +37,12 @@ export default function Home() {
   const [r2, setR2] = useState<number | null>(null);
   const [rFx, setRFx] = useState<number | null>(null); // ③④ 공용 (동일 환전소 환율)
 
+  // 현지 화폐가 바뀌면 이전 통화 기준으로 입력한 환전소 환율은 무효
+  useEffect(() => {
+    setR2(null);
+    setRFx(null);
+  }, [localCode]);
+
   useEffect(() => {
     fetch("/api/rates")
       .then((r) => r.json())
@@ -51,30 +57,33 @@ export default function Home() {
 
   const city = cityById(cityId);
   const mid = (code: string) => (code === "KRW" ? 1 : rates?.[code]?.mid ?? null);
+  // 현지 화폐가 경유 외화와 같으면(괌·하와이 USD 등) 다른 쪽으로 자동 전환
+  const effFx: "USD" | "EUR" =
+    localCode === fxCode ? (fxCode === "USD" ? "EUR" : "USD") : fxCode;
   const midLocal = localCode ? mid(localCode) : null;
-  const midFx = mid(fxCode);
+  const midFx = mid(effFx);
   const midBase = mid(base);
 
   const amount = parseFloat(amountStr.replace(/,/g, "")) || 0;
   const budgetKrw = midBase ? amount * midBase : 0;
 
   const local = currencyByCode(localCode);
-  const fx = currencyByCode(fxCode)!;
+  const fx = currencyByCode(effFx)!;
 
   const results = useMemo<RouteResult[] | null>(() => {
-    if (!local || !midLocal || !midFx || budgetKrw <= 0 || localCode === fxCode) return null;
+    if (!local || !midLocal || !midFx || budgetKrw <= 0) return null;
     return compareRoutes({
       budgetKrw,
       midLocal,
       local: { spreadPct: local.spreadPct, discount: local.discount },
       midFx,
       fx: { spreadPct: fx.spreadPct, discount: fx.discount },
-      fxCode,
+      fxCode: effFx,
       r2,
       r3: rFx,
       r4: rFx,
     });
-  }, [local, midLocal, midFx, budgetKrw, localCode, fxCode, fx, r2, rFx]);
+  }, [local, midLocal, midFx, budgetKrw, effFx, fx, r2, rFx]);
 
   const ranked = useMemo(() => {
     if (!results) return null;
@@ -200,7 +209,7 @@ export default function Home() {
         </section>
 
         {/* Step 4: 현지 환전소 환율 입력 */}
-        {local && localCode !== fxCode && (
+        {local && (
           <section className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
             <div>
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -209,7 +218,7 @@ export default function Home() {
               </h2>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 환전소 전광판의 <b>Buying(We Buy)</b>은 환전소가 내 돈을 사는 줄입니다. 내가
-                원화·달러를 내는 경우 <b>Buying KRW / Buying {fxCode}</b> 줄을 보세요.
+                원화·달러를 내는 경우 <b>Buying KRW / Buying {effFx}</b> 줄을 보세요.
               </p>
             </div>
 
@@ -217,21 +226,22 @@ export default function Home() {
               <h3 className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
                 ② 원화 → {localCode} 환전소 환율
               </h3>
-              <RatePairInput from="KRW" to={localCode} mid={midLocal} onChange={setR2} />
+              <RatePairInput key={`krw-${localCode}`} from="KRW" to={localCode} mid={midLocal} onChange={setR2} />
             </div>
 
             <div>
               <div className="mb-2 flex items-center gap-3">
                 <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                  ③④ {fxCode} → {localCode} 환전소 환율
+                  ③④ {effFx} → {localCode} 환전소 환율
                 </h3>
                 <div className="flex rounded-md border border-gray-200 dark:border-gray-700 p-0.5 gap-0.5">
                   {(["USD", "EUR"] as const).map((f) => (
                     <button
                       key={f}
                       onClick={() => setFxCode(f)}
-                      className={`rounded px-2 py-0.5 text-xs ${
-                        fxCode === f ? "bg-blue-600 text-white" : "text-gray-500"
+                      disabled={f === localCode}
+                      className={`rounded px-2 py-0.5 text-xs disabled:opacity-30 ${
+                        effFx === f ? "bg-blue-600 text-white" : "text-gray-500"
                       }`}
                     >
                       {f}
@@ -240,8 +250,8 @@ export default function Home() {
                 </div>
               </div>
               <RatePairInput
-                key={`${fxCode}-${localCode}`}
-                from={fxCode}
+                key={`${effFx}-${localCode}`}
+                from={effFx}
                 to={localCode}
                 mid={midFx && midLocal ? midLocal / midFx : null}
                 onChange={setRFx}
@@ -291,7 +301,7 @@ export default function Home() {
                           <span className="text-sm font-semibold">{meta.title}</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {meta.desc(fxCode, localCode)}
+                          {meta.desc(effFx, localCode)}
                         </p>
                         {r.note && <p className="mt-1 text-xs text-gray-400">{r.note}</p>}
                       </div>
@@ -330,7 +340,7 @@ export default function Home() {
                     <div>
                       <span className="text-sm font-semibold">{ROUTE_META.card.title}</span>
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {ROUTE_META.card.desc(fxCode, localCode)} — 단, ATM 출금 수수료·현금 필요
+                        {ROUTE_META.card.desc(effFx, localCode)} — 단, ATM 출금 수수료·현금 필요
                         여부는 아래 팁 참고
                       </p>
                     </div>
