@@ -56,7 +56,7 @@ export default function RatePairInput({
       <div className="flex-1">
         <div className="flex items-baseline gap-2 mb-1">
           <span className="font-mono text-sm font-semibold">{label}</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{desc}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">{desc}</span>
         </div>
         <input
           type="text"
@@ -81,7 +81,7 @@ export default function RatePairInput({
         <span className="pb-2 text-gray-400 text-sm">=</span>
         {field(1)}
       </div>
-      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
         환전소 전광판에서 {nameOf(from)}({from})를 내고 {nameOf(to)}({to})를 받는 줄의
         숫자를 <b>둘 중 맞는 방향 칸</b>에 입력하세요. 반대쪽 칸에 역수가 자동 표시됩니다.
       </p>
