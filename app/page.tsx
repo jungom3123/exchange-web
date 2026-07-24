@@ -37,6 +37,17 @@ export default function Home() {
   const [r2, setR2] = useState<number | null>(null);
   const [rFx, setRFx] = useState<number | null>(null); // ③④ 공용 (동일 환전소 환율)
 
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains("dark"));
+  }, []);
+  const toggleTheme = () => {
+    const next = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    setDark(next);
+  };
+
   // 현지 화폐가 바뀌면 이전 통화 기준으로 입력한 환전소 환율은 무효
   useEffect(() => {
     setR2(null);
@@ -101,27 +112,40 @@ export default function Home() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8 pb-32">
+    <main className="mx-auto max-w-2xl px-5 py-10 pb-32">
       {/* 헤더 */}
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold">환전, 어디서 하는 게 이득일까?</h1>
-        <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+      <header className="mb-10">
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-3xl font-bold tracking-tight leading-snug">
+            환전, 어디서 하는 게 이득일까?
+          </h1>
+          <button
+            onClick={toggleTheme}
+            aria-label="다크모드 전환"
+            className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 p-2 text-lg leading-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            {dark ? "☀️" : "🌙"}
+          </button>
+        </div>
+        <p className="mt-2 text-base text-gray-600 dark:text-gray-300 leading-relaxed">
           국내 은행 환전 · 현지 환전소 · 이중 환전을 실시간 환율로 한 번에 비교합니다.
         </p>
         {rateError && (
-          <p className="mt-2 text-xs text-red-500">
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">
             환율 데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.
           </p>
         )}
         {rateDate && (
-          <p className="mt-2 text-xs text-gray-400">고시환율 기준일: {rateDate}</p>
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            고시환율 기준일: {rateDate}
+          </p>
         )}
       </header>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Step 1: 기준 화폐 */}
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="mb-2.5 text-base font-semibold text-gray-800 dark:text-gray-200">
             1. 예산 화폐 (내가 갖고 있는 돈)
           </h2>
           <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 p-1 gap-1">
@@ -146,16 +170,16 @@ export default function Home() {
 
         {/* Step 2: 여행지/현지 화폐 */}
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="mb-2.5 text-base font-semibold text-gray-800 dark:text-gray-200">
             2. 여행지 선택
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-gray-500">도시 (팁 제공)</label>
+              <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">도시 (팁 제공)</label>
               <select
                 value={cityId}
                 onChange={(e) => selectCity(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base"
               >
                 <option value="">직접 통화만 선택</option>
                 {CITIES.map((c) => (
@@ -166,14 +190,14 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-gray-500">현지 화폐</label>
+              <label className="mb-1.5 block text-sm text-gray-600 dark:text-gray-400">현지 화폐</label>
               <select
                 value={localCode}
                 onChange={(e) => {
                   setLocalCode(e.target.value);
                   if (city && city.currency !== e.target.value) setCityId("");
                 }}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-base"
               >
                 <option value="">선택하세요</option>
                 {CURRENCIES.filter((c) => c.code !== base).map((c) => (
@@ -188,7 +212,7 @@ export default function Home() {
 
         {/* Step 3: 금액 */}
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="mb-2.5 text-base font-semibold text-gray-800 dark:text-gray-200">
             3. 환전할 금액 ({base})
           </h2>
           <input
@@ -199,10 +223,10 @@ export default function Home() {
               const n = parseFloat(e.target.value.replace(/,/g, ""));
               setAmountStr(isNaN(n) ? "" : n.toLocaleString("ko-KR"));
             }}
-            className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-lg font-mono"
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 text-xl font-mono focus:border-blue-500 focus:outline-none"
           />
           {base !== "KRW" && budgetKrw > 0 && (
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
               ≈ {formatAmount(budgetKrw, "KRW")}원 (매매기준율 환산)
             </p>
           )}
@@ -212,18 +236,18 @@ export default function Home() {
         {local && (
           <section className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">
                 4. 현지 환전소 환율 입력{" "}
-                <span className="font-normal text-gray-400">(아는 것만 입력해도 비교됩니다)</span>
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">(아는 것만 입력해도 비교됩니다)</span>
               </h2>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 환전소 전광판의 <b>Buying(We Buy)</b>은 환전소가 내 돈을 사는 줄입니다. 내가
                 원화·달러를 내는 경우 <b>Buying KRW / Buying {effFx}</b> 줄을 보세요.
               </p>
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+              <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 ② 원화 → {localCode} 환전소 환율
               </h3>
               <RatePairInput key={`krw-${localCode}`} from="KRW" to={localCode} mid={midLocal} onChange={setR2} />
@@ -231,7 +255,7 @@ export default function Home() {
 
             <div>
               <div className="mb-2 flex items-center gap-3">
-                <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   ③④ {effFx} → {localCode} 환전소 환율
                 </h3>
                 <div className="flex rounded-md border border-gray-200 dark:border-gray-700 p-0.5 gap-0.5">
@@ -263,7 +287,7 @@ export default function Home() {
         {/* 결과 */}
         {ranked && local && (
           <section>
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <h2 className="mb-3 text-base font-semibold text-gray-800 dark:text-gray-200">
               비교 결과 — 최종 수령 {localCode} 기준
             </h2>
             <div className="space-y-2.5">
@@ -278,7 +302,7 @@ export default function Home() {
                     key={r.key}
                     className={`rounded-xl border p-4 ${
                       isBest
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                        ? "border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-sm"
                         : r.local == null
                         ? "border-gray-200 dark:border-gray-800 opacity-60"
                         : "border-gray-200 dark:border-gray-700"
@@ -298,30 +322,36 @@ export default function Home() {
                               {i + 1}위
                             </span>
                           )}
-                          <span className="text-sm font-semibold">{meta.title}</span>
+                          <span className="text-base font-semibold">{meta.title}</span>
                         </div>
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                           {meta.desc(effFx, localCode)}
                         </p>
-                        {r.note && <p className="mt-1 text-xs text-gray-400">{r.note}</p>}
+                        {r.note && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{r.note}</p>}
                       </div>
                       <div className="text-right shrink-0">
                         {r.local != null ? (
                           <>
-                            <div className="font-mono text-lg font-bold">
+                            <div
+                              className={`font-mono font-bold ${
+                                isBest ? "text-2xl text-blue-700 dark:text-blue-300" : "text-lg"
+                              }`}
+                            >
                               {formatAmount(r.local, localCode)}
-                              <span className="ml-1 text-xs font-normal text-gray-400">
+                              <span className="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">
                                 {localCode}
                               </span>
                             </div>
                             {lossPct != null && lossPct > 0.005 && (
-                              <div className="text-xs text-red-500">
+                              <div className="text-xs text-red-600 dark:text-red-400">
                                 1위보다 −{lossPct.toFixed(2)}% (≈{formatAmount(lossKrw!, "KRW")}원
                                 손해)
                               </div>
                             )}
                             {isBest && (
-                              <div className="text-xs font-medium text-blue-600">가장 유리 ✓</div>
+                              <div className="mt-0.5 text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                가장 유리 ✓
+                              </div>
                             )}
                           </>
                         ) : (
@@ -338,8 +368,8 @@ export default function Home() {
                 <div className="rounded-xl border border-dashed border-emerald-400 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="text-sm font-semibold">{ROUTE_META.card.title}</span>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-base font-semibold">{ROUTE_META.card.title}</span>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                         {ROUTE_META.card.desc(effFx, localCode)} — 단, ATM 출금 수수료·현금 필요
                         여부는 아래 팁 참고
                       </p>
@@ -359,7 +389,7 @@ export default function Home() {
         {city && (
           <section className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <h2 className="text-sm font-semibold">{city.nameKo} 환전 팁</h2>
+              <h2 className="text-base font-semibold">{city.nameKo} 환전 팁</h2>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                   city.cashNeedLevel === "high"
@@ -377,25 +407,25 @@ export default function Home() {
                 </span>
               )}
             </div>
-            <ul className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
               {city.tips.map((t, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                  <span className="text-blue-400 dark:text-blue-500">·</span>
                   <span>{t}</span>
                 </li>
               ))}
             </ul>
             {city.knownBooths && city.knownBooths.length > 0 && (
               <div className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
-                <h3 className="mb-1.5 text-xs font-semibold text-gray-500">알려진 환전소</h3>
-                <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                <h3 className="mb-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300">알려진 환전소</h3>
+                <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                   {city.knownBooths.map((b, i) => (
                     <li key={i}>
                       <b>{b.name}</b> — {b.area}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-[10px] text-gray-400">
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   유명 환전소가 항상 최고 환율은 아닙니다. KRW 취급 여부·당일 환율은 방문 직전
                   확인하세요.
                 </p>
@@ -405,7 +435,7 @@ export default function Home() {
         )}
       </div>
 
-      <footer className="mt-10 border-t border-gray-100 dark:border-gray-800 pt-4 text-[11px] leading-relaxed text-gray-400">
+      <footer className="mt-12 border-t border-gray-200 dark:border-gray-800 pt-5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
         데이터 출처: 한국수출입은행 · Frankfurter(ECB) · Open ER API. 스프레드·우대율은 하나은행 고시
         기준이며 실제 환율·수수료는 지점과 시점에 따라 다를 수 있습니다. 본 서비스는 투자·금융 조언이
         아닌 참고용 정보입니다.

@@ -15,7 +15,11 @@ export default function FloatingInfo({
   midKrwLocal: number | null;
   midKrwBase: number | null;
 }) {
-  const [open, setOpen] = useState(true);
+  // 모바일에선 결과를 가리지 않도록 기본 접힘, 데스크톱에선 펼침
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(window.innerWidth >= 768);
+  }, []);
   const [series, setSeries] = useState<{ date: string; v: number }[] | null>(null);
   const [chartError, setChartError] = useState(false);
 
