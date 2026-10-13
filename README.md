@@ -39,6 +39,30 @@ npm run test:e2e           # 프로덕션 빌드로 실행, 포트 3100 사용
 - 초록색은 선택·최대 수령액·주요 버튼에 사용합니다. 일반 결과는 구분선으로 정리하고, 환율 정보와 여행 팁은 문서 흐름 안에 둡니다.
 - `components/Icon.tsx`의 듀오톤 SVG 아이콘을 공유합니다. 장식용 배경 박스를 추가하지 않으며, 라벨이 있는 아이콘은 보조 기술에서 중복으로 읽지 않습니다.
 
+## 코드 검사
+
+```bash
+npm run lint       # Oxlint + anti-slop, 소스를 수정하지 않고 검사
+npm run typecheck  # 앱과 vendored 플러그인의 TypeScript 검사
+```
+
+Oxlint와 `@oxlint/plugins`를 **1.87.0**으로 함께 고정했습니다. 업그레이드할 때도 두 버전을 맞춥니다. `.oxlintrc.json`에서 anti-slop 일반 규칙 18개와 네이티브 `oxc/no-accumulating-spread`를 오류로 활성화합니다. Effect는 직접 의존성이 없어 추가 규칙을 활성화하지 않았습니다.
+
+플러그인은 `tools/oxlint/anti-slop/`에 복사되어 이 레포에서 관리합니다. 원본 번들의 저장소·커밋은 확인되지 않았으며, 설치한 파일 38개의 해시와 Git 복원 방법을 [UPSTREAM.md](tools/oxlint/anti-slop/UPSTREAM.md)에 기록했습니다. 에이전트 도구·빌드/테스트 산출물·vendored 플러그인은 lint에서 제외합니다.
+
+**설치 시점(2026-10-13) 기준:** 19개 파일 검사 결과 오류 185건, 경고 0건입니다. 설치 요청의 범위에 따라 기존 소스에 자동 수정이나 규칙 억제를 적용하지 않았으므로 `npm run lint`는 현재 종료 코드 1을 반환합니다.
+
+| 규칙 | 오류 수 | 주요 위치 |
+|---|---:|---|
+| `require-readable-spacing` | 172 | 앱·컴포넌트·계산·테스트 코드의 선언/문장 간격 |
+| `no-runtime-typeof` | 5 | `app/page.tsx`, `components/DestinationPicker.tsx`, `lib/calc.ts` |
+| `require-safety-comment-for-type-assertion` | 3 | `app/api/rates/route.ts`의 API 응답 타입 단언 |
+| `no-shape-in-symbol-names` | 3 | `components/Icon.tsx`의 `shapes` 선언과 참조 |
+| `no-unknown-returns` | 1 | `app/api/rates/route.ts`의 응답 반환 타입 |
+| `no-known-value-widening` | 1 | `tests/exchange.spec.ts`의 `MIDS` 선언 |
+
+파일·줄 번호별 최신 진단은 `npm run lint -- --format unix`로 확인합니다. 설치 검증에서는 타입 검사와 기존 계산·입력 테스트가 통과했습니다. 소스 정리는 별도 작업으로 진행합니다.
+
 `.env.local`에 한국수출입은행 API 키를 넣으면 국내 고시환율이 1순위로 적용됩니다
 (없어도 Frankfurter/Open ER API 폴백으로 동작):
 
