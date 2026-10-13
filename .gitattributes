@@ -1,0 +1,2 @@
+# Preserve the bundled plugin bytes for reproducible future vendor updates.
+tools/oxlint/anti-slop/** -text

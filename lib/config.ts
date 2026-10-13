@@ -19,7 +19,7 @@ export const CURRENCIES: Currency[] = [
   { code: "USD", nameKo: "미국 달러", flag: "🇺🇸", koreaexim: "USD", unit: 1, frankfurter: true, spreadPct: 1.75, discount: 0.9, decimals: 2 },
   { code: "JPY", nameKo: "일본 엔", flag: "🇯🇵", koreaexim: "JPY(100)", unit: 100, frankfurter: true, spreadPct: 1.75, discount: 0.8, decimals: 0 },
   { code: "EUR", nameKo: "유로", flag: "🇪🇺", koreaexim: "EUR", unit: 1, frankfurter: true, spreadPct: 1.99, discount: 0.8, decimals: 2 },
-  { code: "THB", nameKo: "태국 밧", flag: "🇹🇭", koreaexim: "THB", unit: 1, frankfurter: true, spreadPct: 5, discount: 0.3, decimals: 0 },
+  { code: "THB", nameKo: "태국 바트", flag: "🇹🇭", koreaexim: "THB", unit: 1, frankfurter: true, spreadPct: 5, discount: 0.3, decimals: 0 },
   { code: "VND", nameKo: "베트남 동", flag: "🇻🇳", unit: 1, frankfurter: false, spreadPct: 11.8, discount: 0, decimals: 0 },
   { code: "TWD", nameKo: "대만 달러", flag: "🇹🇼", unit: 1, frankfurter: false, spreadPct: 13.1, discount: 0, decimals: 0 },
   { code: "HKD", nameKo: "홍콩 달러", flag: "🇭🇰", koreaexim: "HKD", unit: 1, frankfurter: true, spreadPct: 1.97, discount: 0.3, decimals: 2 },
@@ -39,10 +39,12 @@ export const currencyByCode = (code: string) =>
   CURRENCIES.find((c) => c.code === code);
 
 export const BASE_CURRENCIES = ["KRW", "USD", "EUR"] as const;
+
 export type BaseCurrency = (typeof BASE_CURRENCIES)[number];
 
 export function formatAmount(v: number, code: string): string {
   const decimals = code === "KRW" ? 0 : currencyByCode(code)?.decimals ?? 2;
+
   return v.toLocaleString("ko-KR", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -53,5 +55,6 @@ export function formatAmount(v: number, code: string): string {
 export function formatRate(v: number): string {
   if (!isFinite(v) || v <= 0) return "-";
   const digits = v >= 100 ? 2 : v >= 1 ? 4 : 6;
+
   return v.toLocaleString("ko-KR", { maximumFractionDigits: digits });
 }
