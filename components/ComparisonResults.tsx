@@ -19,6 +19,7 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
   const ranked = rankRoutes(results);
   const sameCurrency = holding === localCode;
   const fxName = fxCode === "USD" ? "달러" : "유로";
+
   const titles = {
     bank: "국내 은행 환전",
     localKrw: "현지 원화 환전",
@@ -26,6 +27,7 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
     double: `${fxName} 이중환전`,
     card: "카드·ATM 참고 금액",
   };
+
   const paths = {
     bank: `하나은행 · KRW → ${localCode}`,
     localKrw: `현지 환전소 · KRW → ${localCode}`,
@@ -33,10 +35,13 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
     double: `KRW → ${fxCode} → ${localCode}`,
     card: "환율 우대 100% 기준",
   };
+
   const message = ranked.count === 0 ? pending
     : ranked.count === 1 ? "현재 1개 방법만 계산할 수 있어요."
       : `입력한 조건으로 현금 환전 ${ranked.count}개 방법을 비교했어요.`;
+
   const cashLabel = sameCurrency ? "원화 출발 환전 방법" : "현금 환전 방법";
+
   return <section className="results-panel" aria-labelledby="results-title">
     <div className="section-heading">
       <div className="panel-heading"><span className="step-number">03</span><p>수령액 비교</p><span className="optional-label">자동 계산</span></div>
@@ -68,6 +73,7 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
         const percent = difference !== null && ranked.best ? difference / ranked.best * 100 : null;
         const won = difference !== null && midLocal !== null ? difference * midLocal : null;
         const joint = route.rank !== null && ranked.main.filter((r) => r.rank === route.rank).length > 1;
+
         return <article key={route.key} data-route={route.key} className={`result-card${route.isBest ? " result-best" : ""}${route.local === null ? " result-pending" : ""}`} aria-label={titles[route.key]}>
           <div className="result-method">
             {route.rank !== null && <span className="rank-badge">{joint ? "공동 " : ""}{route.rank}위</span>}

@@ -24,6 +24,7 @@ export default function RatePairInput({ from, to, mid, loading, value, onChange 
       {([0, 1] as const).map((direction) => {
         const label = direction === 0 ? `${from}/${to}` : `${to}/${from}`;
         const relation = direction === 0 ? `1 ${to} = ? ${from}` : `1 ${from} = ? ${to}`;
+
         return <div className="rate-field" key={direction}>
           <label htmlFor={`${id}-${direction}`} className="field-label rate-label">{label}</label>
           <span id={`${id}-unit-${direction}`} className="rate-unit">{relation}</span>

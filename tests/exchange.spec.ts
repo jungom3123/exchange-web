@@ -5,21 +5,26 @@ const MIDS: Record<string, number> = {
   HKD: 180, SGD: 1050, PHP: 25, IDR: .09, MYR: 320, CNY: 195,
   GBP: 1800, CHF: 1600, AUD: 930, CAD: 1020, NZD: 850,
 };
+
 const fixture = (mids = MIDS) => ({ date: "2026-09-18", rates: Object.fromEntries(
   Object.entries(mids).map(([code, mid]) => [code, { mid, source: "test" }]),
 ) });
+
 async function mockRates(page: Page, mids = MIDS) {
   await page.route("**/api/rates", (route) => route.fulfill({ json: fixture(mids) }));
   await page.route("https://api.frankfurter.dev/**", (route) => route.fulfill({ json: {
     rates: { "2026-09-16": { KRW: 39, USD: .027, EUR: .026 }, "2026-09-17": { KRW: 40, USD: .028, EUR: .027 } },
   } }));
 }
+
 async function start(page: Page, local = "THB") {
   await page.goto("/");
   await expect(page.getByText("환율 기준일: 2026-09-18")).toBeVisible();
   await page.getByLabel("여행지에서 쓸 돈", { exact: true }).selectOption(local);
 }
+
 const amount = (page: Page) => page.getByRole("textbox", { name: /얼마를 환전하나요/ });
+
 const routeCard = (page: Page, key: string) => page.locator(`[data-route="${key}"]`);
 
 test.beforeEach(async ({ page }) => { await mockRates(page); });
@@ -88,11 +93,13 @@ test("decimal typing, actual clipboard paste and caret edits preserve the amount
   await amount(page).press("Control+V");
   await expect(amount(page)).toHaveValue("100.5");
   await expect(routeCard(page, "heldFx").locator(".receipt")).toContainText("201.00 EUR");
+
   for (const [raw, receipt] of [["0.5", "1.00 EUR"], ["1,000.50", "2,001.00 EUR"]]) {
     await amount(page).fill(raw);
     await expect(routeCard(page, "heldFx").locator(".receipt")).toContainText(receipt);
     await expect(amount(page)).toHaveValue(raw);
   }
+
   await amount(page).fill("100.5");
   await amount(page).press("Home");
   await amount(page).press("ArrowRight");
@@ -107,6 +114,7 @@ test("decimal typing, actual clipboard paste and caret edits preserve the amount
   await amount(page).pressSequentially(".");
   await expect(amount(page)).toHaveValue("100.5");
   expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(4);
+
   for (const raw of ["", "0", "-2", "1.2.3", "100abc", "1,00"]) {
     await amount(page).fill(raw);
     await amount(page).blur();
@@ -115,6 +123,7 @@ test("decimal typing, actual clipboard paste and caret edits preserve the amount
     await expect(page.locator(".rank-badge")).toHaveCount(0);
     await expect(page.locator(".comparison-status")).toContainText("0개");
   }
+
   await amount(page).fill("100.5");
   await expect(routeCard(page, "heldFx").locator(".receipt")).toContainText("201.00 EUR");
 });
@@ -233,11 +242,14 @@ for (const width of [360, 390, 768, 1280]) {
     await page.getByRole("textbox", { name: "VND/KRW", exact: true }).fill("18");
     await expect(page.locator(".comparison-status")).toContainText("2개");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
     for (const card of await page.locator(".result-card, .reference-card").all()) {
       expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     }
+
     const inputBox = await page.locator(".input-panel").boundingBox();
     const resultBox = await page.locator(".results-panel").boundingBox();
+
     if (width >= 1024) expect(resultBox!.x).toBeGreaterThan(inputBox!.x + inputBox!.width);
     else {
       expect(resultBox!.y).toBeGreaterThan(inputBox!.y + inputBox!.height);
@@ -246,6 +258,7 @@ for (const width of [360, 390, 768, 1280]) {
       await jump.press("Enter");
       await expect(page.getByRole("heading", { name: /환전 방법별 예상 수령액/ })).toBeFocused();
     }
+
     await page.screenshot({ path: testInfo.outputPath(`vnd-${width}-light.png`), fullPage: true });
     await page.getByRole("button", { name: "다크 모드로 전환", exact: true }).click();
     await expect(page.getByRole("button", { name: "라이트 모드로 전환", exact: true })).toBeVisible();
@@ -296,12 +309,16 @@ test("keyboard alone completes required inputs and quick selections", async ({ p
   await page.keyboard.type("태국");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
+
   for (let step = 0; step < 20; step++) {
     await page.keyboard.press("Tab");
+
     if (await amount(page).evaluate((el) => el === document.activeElement)) break;
   }
+
   await expect(amount(page)).toBeFocused();
   await page.keyboard.type("100.5");
+
   // KRW/THB, THB/KRW, USD/THB, THB/USD.
   for (let step = 0; step < 4; step++) await page.keyboard.press("Tab");
   await expect(page.getByRole("textbox", { name: "THB/USD", exact: true })).toBeFocused();
@@ -326,6 +343,7 @@ test("touch can complete comparison without opening tooltips", async ({ browser 
   await page.getByRole("button", { name: /비교 결과 보기/ }).tap();
   await expect(page.locator(".comparison-status")).toContainText("2개");
   await expect(page.getByText(/내가 내는 돈의/)).toBeAttached();
+
   for (const selector of [".theme-button", ".currency-option > span", ".city-chip", ".fx-option span", ".primary-button"]) {
     for (const target of await page.locator(selector).all()) {
       const box = await target.boundingBox();
@@ -333,5 +351,6 @@ test("touch can complete comparison without opening tooltips", async ({ browser 
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
   }
+
   await context.close();
 });

@@ -40,12 +40,15 @@ export interface CompareInput {
 
 export function compareRoutes(i: CompareInput): RouteResult[] {
   const results: RouteResult[] = [];
+
   const positive = (v: number | null | undefined): v is number =>
     typeof v === "number" && Number.isFinite(v) && v > 0;
+
   const add = (key: RouteKey, value: number | null, status: RouteResult["status"]) => {
     results.push({ key, local: positive(value) ? value : null,
       status: positive(value) ? "ready" : value !== null ? "invalid-amount" : status });
   };
+
   const budget = positive(i.budgetKrw) ? i.budgetKrw : null;
   const budgetStatus = i.budgetKrw === null ? "missing-reference" : "invalid-amount";
   const hasLocal = positive(i.midLocal);
@@ -62,23 +65,29 @@ export function compareRoutes(i: CompareInput): RouteResult[] {
     add("heldFx", held && positive(i.r3) ? held * i.r3 : null,
       !held ? budgetStatus : "missing-rate");
   }
+
   // If the intermediate currency is already the destination, this duplicates bank.
   if (i.fxCode !== i.localCode) {
     add("double", budget && hasFx && i.fx.spreadPct !== null && positive(i.r4)
       ? budget / cashSellRate(i.midFx!, i.fx.spreadPct, i.fx.discount) * i.r4 : null,
       i.fx.spreadPct === null ? "unavailable" : !budget ? budgetStatus : !hasFx ? "missing-reference" : "missing-rate");
   }
+
   add("card", budget && hasLocal ? budget / i.midLocal! : null,
     !budget ? budgetStatus : "missing-reference");
+
   return results;
 }
 
 export function rankRoutes(results: RouteResult[]) {
   const cash = results.filter((r) => r.key !== "card");
+
   const valid = cash.filter((r) => r.status === "ready" && r.local !== null)
     .sort((a, b) => b.local! - a.local!);
+
   const count = valid.length;
   const best = valid[0]?.local ?? null;
+
   return {
     count, best,
     main: [...valid, ...cash.filter((r) => r.status !== "ready")].map((r) => ({
@@ -102,5 +111,6 @@ export function looksFlipped(input: number, expected: number): boolean {
   const ratio = input / expected;
   const invRatio = 1 / input / expected;
   const within = (r: number) => r > 1 / 1.3 && r < 1.3;
+
   return !within(ratio) && within(invRatio);
 }

@@ -39,10 +39,12 @@ export const currencyByCode = (code: string) =>
   CURRENCIES.find((c) => c.code === code);
 
 export const BASE_CURRENCIES = ["KRW", "USD", "EUR"] as const;
+
 export type BaseCurrency = (typeof BASE_CURRENCIES)[number];
 
 export function formatAmount(v: number, code: string): string {
   const decimals = code === "KRW" ? 0 : currencyByCode(code)?.decimals ?? 2;
+
   return v.toLocaleString("ko-KR", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -53,5 +55,6 @@ export function formatAmount(v: number, code: string): string {
 export function formatRate(v: number): string {
   if (!isFinite(v) || v <= 0) return "-";
   const digits = v >= 100 ? 2 : v >= 1 ? 4 : 6;
+
   return v.toLocaleString("ko-KR", { maximumFractionDigits: digits });
 }

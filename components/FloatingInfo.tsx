@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useId, useState } from "react";
 import { currencyByCode, formatRate } from "@/lib/config";
 import { cashSellRate, cashBuyRate } from "@/lib/calc";
@@ -27,12 +28,14 @@ export default function FloatingInfo({
 
   const local = currencyByCode(localCode);
   const base = baseCode === "KRW" ? null : currencyByCode(baseCode);
+
   const chartSupported =
     baseCode !== localCode && (baseCode === "KRW" || base?.frankfurter) && local?.frankfurter;
 
   useEffect(() => {
     setSeries(null);
     setChartError(false);
+
     if (!chartSupported || !local) return;
     const controller = new AbortController();
     const start = new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10);
@@ -44,14 +47,18 @@ export default function FloatingInfo({
       .then((r) => r.json())
       .then((d: { rates: Record<string, Record<string, number>> }) => {
         if (controller.signal.aborted) return;
+
         const pts = Object.entries(d.rates)
           .map(([date, rr]) => ({ date, v: rr[baseCode] }))
           .filter((p) => p.v > 0)
           .sort((a, b) => a.date.localeCompare(b.date));
+
         setSeries(pts.length ? pts : null);
+
         if (!pts.length) setChartError(true);
       })
       .catch(() => { if (!controller.signal.aborted) setChartError(true); });
+
     return () => controller.abort();
   }, [localCode, baseCode, chartSupported, local]);
 
@@ -145,14 +152,18 @@ function Chart({ series }: { series: { date: string; v: number }[] }) {
   const vs = series.map((p) => p.v);
   const min = Math.min(...vs), max = Math.max(...vs);
   const span = max - min || 1;
+
   const pts = series
     .map((p, idx) => {
       const x = P + (idx / (series.length - 1)) * (W - 2 * P);
       const y = H - P - ((p.v - min) / span) * (H - 2 * P);
+
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+
   const up = vs[vs.length - 1] >= vs[0];
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="최근 3개월 환율 추이" className="rate-chart">
       <polyline

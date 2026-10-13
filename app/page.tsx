@@ -13,6 +13,7 @@ import ComparisonResults from "@/components/ComparisonResults";
 import Icon from "@/components/Icon";
 
 type Rates = Record<string, { mid: number; source: string }>;
+
 const HOLDINGS = [
   { code: "KRW", label: "원화" },
   { code: "USD", label: "이미 가진 달러" },
@@ -34,7 +35,11 @@ export default function Home() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/rates", { signal: controller.signal })
-      .then((response) => { if (!response.ok) throw new Error("rates unavailable"); return response.json(); })
+      .then((response) => {
+        if (!response.ok) throw new Error("rates unavailable");
+
+        return response.json();
+      })
       .then((data) => {
         if (!data.rates || typeof data.rates !== "object") throw new Error("invalid rates");
         setRates(data.rates);
@@ -42,18 +47,25 @@ export default function Home() {
       })
       .catch(() => { if (!controller.signal.aborted) setRateError(true); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+
     return () => controller.abort();
   }, []);
+
   const toggleTheme = () => {
     const next = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", next);
+
     try { localStorage.setItem("theme", next ? "dark" : "light"); } catch { /* Theme still works. */ }
+
     setDark(next);
   };
+
   const mid = (code: string): number | null => {
     const value = code === "KRW" ? 1 : rates?.[code]?.mid;
+
     return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
   };
+
   const city = cityById(state.cityId);
   const local = currencyByCode(state.localCode);
   const fxCode = effectiveFx(state);
@@ -63,19 +75,25 @@ export default function Home() {
   const midFx = mid(fxCode);
   const amount = parsePositiveDecimal(state.amount);
   const budgetKrw = amount !== null && midBase !== null ? amount * midBase : null;
+
   const results = local && amount !== null ? compareRoutes({
     budgetKrw, holdingCurrency: state.holding, heldAmount: amount, localCode: state.localCode,
     midLocal, local, midFx, fx, fxCode,
     r2: normalizedRate(state.krwRate), r3: normalizedRate(state.fxRate), r4: normalizedRate(state.fxRate),
   }) : [];
+
   const readyCount = rankRoutes(results).count;
+
   const pending = !local ? "여행 도시나 여행지에서 쓸 통화를 선택해 주세요."
     : amount === null ? "환전할 금액을 0보다 큰 숫자로 입력해 주세요."
       : loading ? "환율을 불러오고 있어요. 알고 있는 환전소 환율을 입력할 수 있어요."
         : "아래 방법의 안내를 확인하고, 알고 있는 환율을 입력해 주세요.";
+
   const amountError = amount === null && (state.amount !== "" || amountTouched);
+
   const selectCity = (cityId: string) => {
     const selected = cityById(cityId);
+
     if (selected) dispatch({ type: "destination", cityId, localCode: selected.currency });
   };
 
