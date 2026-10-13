@@ -6,6 +6,7 @@ import { compareRoutes, rankRoutes } from "@/lib/calc";
 import { effectiveFx, initialInput, inputReducer, normalizedRate, parsePositiveDecimal } from "@/lib/input";
 import { CASH_LEVEL_LABEL, cityById } from "@/data/cities";
 import RatePairInput from "@/components/RatePairInput";
+import AmountInput from "@/components/AmountInput";
 import FloatingInfo from "@/components/FloatingInfo";
 import InfoTooltip from "@/components/InfoTooltip";
 import DestinationPicker from "@/components/DestinationPicker";
@@ -149,10 +150,8 @@ export default function Home() {
         <section className="input-section" aria-labelledby="amount-title">
           <h2 id="amount-title" className="section-title"><label htmlFor="amount">얼마를 환전하나요? <span className="unit-label">({state.holding})</span></label></h2>
           <div className="amount-field">
-            <input id="amount" type="text" inputMode="decimal" autoComplete="off" className="text-input amount-input"
-              placeholder={state.holding === "KRW" ? "예시 1,000,000" : "예시 100.50"}
-              aria-invalid={amountError} aria-describedby={amountError ? "amount-error" : undefined}
-              value={state.amount} onChange={(event) => dispatch({ type: "amount", value: event.target.value })}
+            <AmountInput value={state.amount} currency={state.holding} invalid={amountError}
+              onChange={(value) => dispatch({ type: "amount", value })}
               onBlur={() => setAmountTouched(true)} />
             <span aria-hidden="true" className="amount-unit">{state.holding}</span>
           </div>

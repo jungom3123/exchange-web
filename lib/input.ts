@@ -2,7 +2,7 @@ export type HoldingCurrency = "KRW" | "USD" | "EUR";
 
 export type FxCurrency = "USD" | "EUR";
 
-// Keep what the user typed. Parsing never rewrites the input or its caret.
+// Parse numeric text without rewriting it; amount fields format the display separately.
 export function parsePositiveDecimal(raw: string): number | null {
   const text = raw.trim();
 

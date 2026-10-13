@@ -88,6 +88,70 @@ test("currency pair changes clear both display and calculations without clearing
   await expect(page.getByRole("textbox", { name: "USD/EUR", exact: true })).toHaveValue("");
 });
 
+test("amount groups thousands immediately while typing and keeps the calculation", async ({ page }) => {
+  await start(page);
+  await amount(page).pressSequentially("1000000");
+  await expect(amount(page)).toHaveValue("1,000,000");
+  await page.getByRole("textbox", { name: "KRW/THB", exact: true }).fill("40");
+  await expect(routeCard(page, "localKrw").locator(".receipt")).toContainText("25,000 THB");
+  await amount(page).blur();
+  await expect(amount(page)).toHaveValue("1,000,000");
+});
+
+test("backspace and delete reach digits next to automatic amount separators", async ({ page }) => {
+  await start(page);
+  await amount(page).fill("12345");
+  await amount(page).press("Home");
+  await amount(page).press("ArrowRight");
+  await amount(page).press("ArrowRight");
+  await amount(page).press("ArrowRight");
+  await amount(page).press("Backspace");
+  await expect(amount(page)).toHaveValue("1,345");
+  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(1);
+  await amount(page).fill("12345");
+  await amount(page).press("Home");
+  await amount(page).press("ArrowRight");
+  await amount(page).press("ArrowRight");
+  await amount(page).press("Delete");
+  await expect(amount(page)).toHaveValue("1,245");
+  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(3);
+});
+
+test("pasted amounts retain decimal zeros and selected digits can be replaced", async ({ page, context }) => {
+  await start(page);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => navigator.clipboard.writeText("1234567.50"));
+  await amount(page).focus();
+  await amount(page).press("Control+V");
+  await expect(amount(page)).toHaveValue("1,234,567.50");
+  await amount(page).evaluate((element: HTMLInputElement) => element.setSelectionRange(2, 6));
+  await amount(page).pressSequentially("9");
+  await expect(amount(page)).toHaveValue("19,567.50");
+  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(2);
+  await amount(page).press("Control+A");
+  await amount(page).press("Backspace");
+  await expect(amount(page)).toHaveValue("");
+  await page.evaluate(() => navigator.clipboard.writeText("1,00"));
+  await amount(page).press("Control+V");
+  await expect(amount(page)).toHaveValue("1,00");
+  await expect(amount(page)).toHaveAttribute("aria-invalid", "true");
+});
+
+test("pasting into a grouped amount regroups existing separators", async ({ page, context }) => {
+  await start(page);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await amount(page).fill("1234");
+  await amount(page).evaluate((element: HTMLInputElement) => element.setSelectionRange(2, 5));
+  await page.evaluate(() => navigator.clipboard.writeText("5678"));
+  await amount(page).press("Control+V");
+  await expect(amount(page)).toHaveValue("15,678");
+  await amount(page).press("End");
+  await page.evaluate(() => navigator.clipboard.writeText("0"));
+  await amount(page).press("Control+V");
+  await expect(amount(page)).toHaveValue("156,780");
+  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(7);
+});
+
 test("decimal typing, actual clipboard paste and caret edits preserve the amount", async ({ page, context }) => {
   await start(page, "EUR");
   await page.getByRole("radio", { name: /이미 가진 달러/ }).check();
@@ -114,13 +178,13 @@ test("decimal typing, actual clipboard paste and caret edits preserve the amount
   await amount(page).press("Home");
   await amount(page).press("ArrowRight");
   await amount(page).pressSequentially("2");
-  await expect(amount(page)).toHaveValue("1200.5");
-  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(2);
+  await expect(amount(page)).toHaveValue("1,200.5");
+  expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(3);
   await amount(page).fill("100.5");
   await amount(page).press("End");
   await amount(page).press("ArrowLeft");
   await amount(page).press("Backspace");
-  await expect(amount(page)).toHaveValue("1005");
+  await expect(amount(page)).toHaveValue("1,005");
   await amount(page).pressSequentially(".");
   await expect(amount(page)).toHaveValue("100.5");
   expect(await amount(page).evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(4);
