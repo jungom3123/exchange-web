@@ -11,8 +11,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import DestinationPicker from "@/components/DestinationPicker";
 import ComparisonResults from "@/components/ComparisonResults";
 import Icon from "@/components/Icon";
-
-type Rates = Record<string, { mid: number; source: string }>;
+import { ratesResponseSchema, type ExchangeRates } from "@/lib/rates";
 
 const HOLDINGS = [
   { code: "KRW", label: "원화" },
@@ -22,7 +21,7 @@ const HOLDINGS = [
 
 export default function Home() {
   const [state, dispatch] = useReducer(inputReducer, initialInput);
-  const [rates, setRates] = useState<Rates | null>(null);
+  const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [rateDate, setRateDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [rateError, setRateError] = useState(false);
@@ -40,10 +39,10 @@ export default function Home() {
 
         return response.json();
       })
-      .then((data) => {
-        if (!data.rates || typeof data.rates !== "object") throw new Error("invalid rates");
+      .then((payload) => {
+        const data = ratesResponseSchema.parse(payload);
         setRates(data.rates);
-        setRateDate(typeof data.date === "string" ? data.date : "");
+        setRateDate(data.date);
       })
       .catch(() => { if (!controller.signal.aborted) setRateError(true); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -60,11 +59,7 @@ export default function Home() {
     setDark(next);
   };
 
-  const mid = (code: string): number | null => {
-    const value = code === "KRW" ? 1 : rates?.[code]?.mid;
-
-    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
-  };
+  const mid = (code: string): number | null => code === "KRW" ? 1 : rates?.[code]?.mid ?? null;
 
   const city = cityById(state.cityId);
   const local = currencyByCode(state.localCode);

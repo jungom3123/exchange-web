@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { CURRENCIES } from "@/lib/config";
+import type { ZodType } from "zod";
+import { erRatesSchema, frankfurterRatesSchema, koreaEximRatesSchema } from "@/lib/rates";
 
 // 매매기준율(KRW per 1단위) 취합: 수출입은행(1순위) > frankfurter(2순위) > open.er-api(3순위)
 // 고시환율은 분 단위로 변하지 않으므로 30분 메모리 캐시
@@ -17,12 +19,12 @@ const TTL = 30 * 60 * 1000;
 const fmtDate = (d: Date) =>
   d.toISOString().slice(0, 10).replace(/-/g, "");
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchJson<T>(url: string, schema: ZodType<T>): Promise<T> {
   const res = await fetch(url, { signal: AbortSignal.timeout(8000), cache: "no-store" });
 
   if (!res.ok) throw new Error(`${res.status} ${url}`);
 
-  return res.json();
+  return schema.parse(await res.json());
 }
 
 export async function GET() {
@@ -33,9 +35,7 @@ export async function GET() {
 
   // 3순위: open.er-api.com — VND/TWD 포함 광범위 커버리지
   try {
-    const er = (await fetchJson("https://open.er-api.com/v6/latest/KRW")) as {
-      rates: Record<string, number>;
-    };
+    const er = await fetchJson("https://open.er-api.com/v6/latest/KRW", erRatesSchema);
 
     for (const c of CURRENCIES) {
       const v = er.rates[c.code];
@@ -46,10 +46,7 @@ export async function GET() {
 
   // 2순위: frankfurter (ECB)
   try {
-    const f = (await fetchJson("https://api.frankfurter.dev/v1/latest?base=KRW")) as {
-      date: string;
-      rates: Record<string, number>;
-    };
+    const f = await fetchJson("https://api.frankfurter.dev/v1/latest?base=KRW", frankfurterRatesSchema);
 
     date = f.date;
 
@@ -68,17 +65,18 @@ export async function GET() {
       try {
         const d = new Date(Date.now() - back * 86400000);
 
-        const items = (await fetchJson(
-          `https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=${key}&searchdate=${fmtDate(d)}&data=AP01`
-        )) as { cur_unit: string; deal_bas_r: string; result: number }[];
+        const items = await fetchJson(
+          `https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=${key}&searchdate=${fmtDate(d)}&data=AP01`,
+          koreaEximRatesSchema,
+        );
 
-        if (!Array.isArray(items) || items.length === 0) continue;
+        if (items.length === 0) continue;
 
         for (const c of CURRENCIES) {
           const item = items.find((it) => it.cur_unit === c.koreaexim);
 
           if (item?.deal_bas_r) {
-            const mid = parseFloat(item.deal_bas_r.replace(/,/g, "")) / c.unit;
+            const mid = item.deal_bas_r / c.unit;
 
             if (mid > 0) rates[c.code] = { mid, source: "koreaexim" };
           }

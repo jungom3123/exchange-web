@@ -23,12 +23,14 @@ npm run dev   # http://localhost:3000
 Node 24에서 다음 명령으로 실행합니다.
 
 ```bash
-npm test                  # 기존 계산 공식 + 입력 상태·경로·추천 회귀 검증
+npm test                  # 계산·입력 상태·외부 데이터 검증
 npm run typecheck
 npm run build
 npx playwright install chromium  # 최초 1회
 npm run test:e2e           # 프로덕션 빌드로 실행, 포트 3100 사용
 ```
+
+부하가 큰 환경에서 병렬 실행이 시간 초과되면 `npm run test:e2e -- --workers=1`로 순차 실행합니다. 테스트 제한 시간과 검증 항목은 동일합니다.
 
 브라우저 테스트는 고정 환율 응답을 사용합니다. 소수점 순차 입력·실제 붙여넣기·커서 수정, 통화 전환, 검색·최근 도시, API 로딩·실패·일부 누락, 키보드·터치, 툴팁과 360/390/768/1280px 화면을 검증합니다. 데스크톱과 모바일에서 `비교 결과 보기` 버튼이 결과 제목으로 포커스를 옮기는지도 확인합니다. 캡처는 `test-results/`에 저장합니다.
 
@@ -50,18 +52,15 @@ Oxlint와 `@oxlint/plugins`를 **1.87.0**으로 함께 고정했습니다. 업�
 
 플러그인은 `tools/oxlint/anti-slop/`에 복사되어 이 레포에서 관리합니다. 원본 번들의 저장소·커밋은 확인되지 않았으며, 설치한 파일 38개의 해시와 Git 복원 방법을 [UPSTREAM.md](tools/oxlint/anti-slop/UPSTREAM.md)에 기록했습니다. 에이전트 도구·빌드/테스트 산출물·vendored 플러그인은 lint에서 제외합니다.
 
-**설치 시점(2026-10-13) 기준:** 19개 파일 검사 결과 오류 185건, 경고 0건입니다. 설치 요청의 범위에 따라 기존 소스에 자동 수정이나 규칙 억제를 적용하지 않았으므로 `npm run lint`는 현재 종료 코드 1을 반환합니다.
+**2026-10-13 정리 완료:** 최초 오류 185건(간격 172건·타입과 이름 13건)을 수정했습니다. 규칙·오류 수준·검사 제외 범위를 유지했으며, 공백 정리와 의미 변경은 별도 커밋으로 기록했습니다. 현재 `npm run lint`는 오류 0건·경고 0건으로 통과합니다.
 
-| 규칙 | 오류 수 | 주요 위치 |
-|---|---:|---|
-| `require-readable-spacing` | 172 | 앱·컴포넌트·계산·테스트 코드의 선언/문장 간격 |
-| `no-runtime-typeof` | 5 | `app/page.tsx`, `components/DestinationPicker.tsx`, `lib/calc.ts` |
-| `require-safety-comment-for-type-assertion` | 3 | `app/api/rates/route.ts`의 API 응답 타입 단언 |
-| `no-shape-in-symbol-names` | 3 | `components/Icon.tsx`의 `shapes` 선언과 참조 |
-| `no-unknown-returns` | 1 | `app/api/rates/route.ts`의 응답 반환 타입 |
-| `no-known-value-widening` | 1 | `tests/exchange.spec.ts`의 `MIDS` 선언 |
+외부 데이터는 [Zod](https://zod.dev/api) 4.6.7로 입력 경계에서 검증합니다.
 
-파일·줄 번호별 최신 진단은 `npm run lint -- --format unix`로 확인합니다. 설치 검증에서는 타입 검사와 기존 계산·입력 테스트가 통과했습니다. 소스 정리는 별도 작업으로 진행합니다.
+- `lib/rates.ts`: 공급자와 앱 API 응답을 검증합니다. 잘못된 환율 항목만 제외해 정상적인 부분 응답은 유지하고, 유효하지 않은 응답 형식은 기존 오류·폴백 처리로 넘깁니다. 수출입은행의 금액 문자열은 전체 형식을 확인한 뒤 숫자로 변환하며, 오류 응답과 휴일의 빈 배열을 구분합니다.
+- `lib/recent-cities.ts`: 저장된 도시 목록에서 유효한 도시만 선택 순서대로 최대 5개 남기며 중복을 제거합니다. 잘못된 JSON이나 배열이 아닌 데이터는 빈 목록으로 처리합니다.
+- 검사에서는 타입 단언·억제 주석으로 외부 데이터를 신뢰하지 않습니다. 검증을 통과한 값만 계산과 화면에 전달합니다.
+
+파일·줄별 최신 진단은 `npm run lint -- --format unix`로 확인합니다. 간격 정리는 `npm run lint -- --fix`로 적용하고, 반복 실행 시 추가 변경이 없는지 확인합니다. 별도 포맷터는 설정되어 있지 않습니다.
 
 `.env.local`에 한국수출입은행 API 키를 넣으면 국내 고시환율이 1순위로 적용됩니다
 (없어도 Frankfurter/Open ER API 폴백으로 동작):
@@ -87,6 +86,8 @@ KOREAEXIM_API_KEY=발급받은키
 | `components/ComparisonResults.tsx` | 비교 상태와 순위, 예상 수령액 및 참고 금액 |
 | `components/InfoTooltip.tsx` | 마우스 호버 전용 부가 설명 |
 | `components/Icon.tsx` | 공통 듀오톤 SVG 아이콘 |
+| `lib/rates.ts` | 환율 공급자 및 앱 API 응답 검증 |
+| `lib/recent-cities.ts` | 브라우저에 저장된 최근 도시 목록 검증 |
 
 ## 계산 공식
 

@@ -42,7 +42,7 @@ export function compareRoutes(i: CompareInput): RouteResult[] {
   const results: RouteResult[] = [];
 
   const positive = (v: number | null | undefined): v is number =>
-    typeof v === "number" && Number.isFinite(v) && v > 0;
+    v !== null && v !== undefined && Number.isFinite(v) && v > 0;
 
   const add = (key: RouteKey, value: number | null, status: RouteResult["status"]) => {
     results.push({ key, local: positive(value) ? value : null,

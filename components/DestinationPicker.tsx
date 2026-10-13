@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { CITIES, cityById } from "@/data/cities";
 import Icon from "./Icon";
+import { readRecentCities } from "@/lib/recent-cities";
 
 const RECENT_KEY = "exchange-recent-cities-v1";
 
@@ -21,10 +22,7 @@ export default function DestinationPicker({ cityId, onSelect, onDirect }: {
   useEffect(() => { setQuery(selectedLabel); }, [selectedLabel]);
   useEffect(() => {
     try {
-      const stored: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
-
-      if (Array.isArray(stored)) setRecent([...new Set(stored.filter((x): x is string =>
-        typeof x === "string" && Boolean(cityById(x))))].slice(0, 5));
+      setRecent(readRecentCities(localStorage.getItem(RECENT_KEY) ?? "[]"));
     } catch { /* Storage is optional; search works without it. */ }
   }, []);
   const search = (query === selectedLabel ? "" : query).trim().toLocaleLowerCase();

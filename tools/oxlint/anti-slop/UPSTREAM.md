@@ -44,4 +44,6 @@ This root `UPSTREAM.md` and `SNAPSHOT.sha256` are repository-owned installation 
 No bundled rule tests were supplied by this skill snapshot; do not interpret references
 to tests in nested upstream documentation as files present in this installation.
 
-Existing application lint findings are reported without autofix or rule suppression.
+At installation, existing application lint findings were reported without autofix or
+rule suppression. The application cleanup on 2026-10-13 resolves those findings;
+copied plugin sources, rule severities, and ignore patterns remain unchanged.

@@ -1,16 +1,16 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const MIDS: Record<string, number> = {
+const MIDS = {
   USD: 1400, EUR: 1500, THB: 40, VND: .055, JPY: 10, TWD: 43,
   HKD: 180, SGD: 1050, PHP: 25, IDR: .09, MYR: 320, CNY: 195,
   GBP: 1800, CHF: 1600, AUD: 930, CAD: 1020, NZD: 850,
-};
+} satisfies Record<string, number>;
 
-const fixture = (mids = MIDS) => ({ date: "2026-09-18", rates: Object.fromEntries(
+const fixture = (mids: Partial<typeof MIDS> = MIDS) => ({ date: "2026-09-18", rates: Object.fromEntries(
   Object.entries(mids).map(([code, mid]) => [code, { mid, source: "test" }]),
 ) });
 
-async function mockRates(page: Page, mids = MIDS) {
+async function mockRates(page: Page, mids: Partial<typeof MIDS> = MIDS) {
   await page.route("**/api/rates", (route) => route.fulfill({ json: fixture(mids) }));
   await page.route("https://api.frankfurter.dev/**", (route) => route.fulfill({ json: {
     rates: { "2026-09-16": { KRW: 39, USD: .027, EUR: .026 }, "2026-09-17": { KRW: 40, USD: .028, EUR: .027 } },
@@ -28,6 +28,16 @@ const amount = (page: Page) => page.getByRole("textbox", { name: /얼마를 환�
 const routeCard = (page: Page, key: string) => page.locator(`[data-route="${key}"]`);
 
 test.beforeEach(async ({ page }) => { await mockRates(page); });
+
+test("an array cannot masquerade as a rates dictionary", async ({ page }) => {
+  await page.route("**/api/rates", (route) => route.fulfill({ json: { date: "2026-10-13", rates: [] } }));
+  await page.goto("/");
+  await expect(page.getByText("환율을 불러오지 못했어요. 잠시 후 새로고침해 주세요.")).toBeVisible();
+  await page.getByLabel("여행지에서 쓸 돈", { exact: true }).selectOption("THB");
+  await amount(page).fill("1000000");
+  await page.getByRole("textbox", { name: "KRW/THB", exact: true }).fill("40");
+  await expect(routeCard(page, "localKrw").locator(".receipt")).toContainText("25,000 THB");
+});
 
 test("desktop comparison action stays visible and moves focus to the results", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
