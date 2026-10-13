@@ -37,7 +37,7 @@ export default function RatePairInput({ from, to, mid, loading, value, onChange 
         </div>;
       })}
     </div>
-    <p id={`${id}-hint`} className="help-text">환전소와 같은 표기의 칸에 숫자를 입력하세요.
+    <p id={`${id}-hint`} className="help-text">같은 표기의 칸에 입력 · 반대편은 자동 계산
       <InfoTooltip label="반대편 환율 자동 표시 설명">한쪽 칸에 입력하면, 같은 환율을 반대 방향으로 계산해 다른 칸에 표시해요.</InfoTooltip>
     </p>
     {invalid && <p id={`${id}-error`} className="error-text">0보다 큰 환율을 입력해 주세요. 소수점은 한 번만 사용할 수 있어요.</p>}

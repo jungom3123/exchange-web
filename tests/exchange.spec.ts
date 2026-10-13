@@ -24,6 +24,18 @@ const routeCard = (page: Page, key: string) => page.locator(`[data-route="${key}
 
 test.beforeEach(async ({ page }) => { await mockRates(page); });
 
+test("desktop comparison action stays visible and moves focus to the results", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await start(page);
+  const compare = page.getByRole("button", { name: /비교 결과 보기/ });
+  await expect(compare).toBeVisible();
+  await expect(compare).toBeDisabled();
+  await amount(page).fill("1000000");
+  await expect(compare).toBeEnabled();
+  await compare.click();
+  await expect(page.getByRole("heading", { name: /환전 방법별 예상 수령액/ })).toBeFocused();
+});
+
 test("empty, one and multiple cash methods give matching recommendation states", async ({ page }) => {
   await start(page);
   await expect(page.locator(".comparison-status")).toContainText("0개");
@@ -235,8 +247,8 @@ for (const width of [360, 390, 768, 1280]) {
       await expect(page.getByRole("heading", { name: /환전 방법별 예상 수령액/ })).toBeFocused();
     }
     await page.screenshot({ path: testInfo.outputPath(`vnd-${width}-light.png`), fullPage: true });
-    await page.getByRole("button", { name: "다크모드", exact: true }).click();
-    await expect(page.getByRole("button", { name: "다크모드", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "다크 모드로 전환", exact: true }).click();
+    await expect(page.getByRole("button", { name: "라이트 모드로 전환", exact: true })).toBeVisible();
     await expect(page.locator("html")).toHaveClass(/dark/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`vnd-${width}-dark.png`), fullPage: true });
@@ -274,7 +286,7 @@ test("keyboard alone completes required inputs and quick selections", async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "다크모드", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "다크 모드로 전환", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("radio", { name: /이미 가진 달러/ })).toBeChecked();

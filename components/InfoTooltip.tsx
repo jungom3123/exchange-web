@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Icon from "./Icon";
 
 export default function InfoTooltip({ label, children }: { label: string; children: string }) {
   const id = useId();
@@ -47,7 +48,7 @@ export default function InfoTooltip({ label, children }: { label: string; childr
         if (!open) setPosition((p) => ({ ...p, ready: false }));
         setOpen(true);
       }}
-      onPointerLeave={closeSoon}>ⓘ</span>
+      onPointerLeave={closeSoon}><Icon name="info" /></span>
     {open && createPortal(
       <div ref={tip} id={id} role="tooltip" className="info-tooltip" style={{
         left: position.left, top: position.top, visibility: position.ready ? "visible" : "hidden",

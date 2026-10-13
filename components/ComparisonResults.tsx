@@ -2,6 +2,7 @@ import { type RefObject } from "react";
 import { rankRoutes, type RouteResult } from "@/lib/calc";
 import { formatAmount } from "@/lib/config";
 import InfoTooltip from "./InfoTooltip";
+import Icon from "./Icon";
 
 const STATUS_TEXT: Record<RouteResult["status"], string> = {
   ready: "", "missing-rate": "환율을 입력하면 비교할 수 있어요.",
@@ -19,11 +20,18 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
   const sameCurrency = holding === localCode;
   const fxName = fxCode === "USD" ? "달러" : "유로";
   const titles = {
-    bank: "출국 전에 하나은행에서 바꾸기",
-    localKrw: "여행지에서 원화로 바꾸기",
-    heldFx: `이미 가진 ${fxName}로 바꾸기`,
-    double: `${fxName}로 바꾼 뒤 한 번 더 환전하기`,
+    bank: "국내 은행 환전",
+    localKrw: "현지 원화 환전",
+    heldFx: `보유 ${fxName} 환전`,
+    double: `${fxName} 이중환전`,
     card: "카드·ATM 참고 금액",
+  };
+  const paths = {
+    bank: `하나은행 · KRW → ${localCode}`,
+    localKrw: `현지 환전소 · KRW → ${localCode}`,
+    heldFx: `현지 환전소 · ${fxCode} → ${localCode}`,
+    double: `KRW → ${fxCode} → ${localCode}`,
+    card: "환율 우대 100% 기준",
   };
   const message = ranked.count === 0 ? pending
     : ranked.count === 1 ? "현재 1개 방법만 계산할 수 있어요."
@@ -31,9 +39,10 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
   const cashLabel = sameCurrency ? "원화 출발 환전 방법" : "현금 환전 방법";
   return <section className="results-panel" aria-labelledby="results-title">
     <div className="section-heading">
-      <p className="eyebrow">비교 결과</p>
+      <div className="panel-heading"><span className="step-number">03</span><p>수령액 비교</p><span className="optional-label">자동 계산</span></div>
       <h2 id="results-title" ref={headingRef} tabIndex={-1}>환전 방법별 예상 수령액{localCode && <span className="heading-currency">{localCode}</span>}</h2>
     </div>
+    {localCode && amount !== null && <p className="result-context">{formatAmount(amount, holding)} {holding} 기준</p>}
     {sameCurrency && amount !== null && <article className="reference-card" aria-label="환전 없이 사용">
       <h3>환전 없이 사용</h3>
       <p className="receipt">{formatAmount(amount, localCode)} <span className="receipt-currency">{localCode}</span></p>
@@ -44,8 +53,14 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
     </p>}
     <div className="comparison-status" role="status" aria-live="polite" aria-atomic="true">
       <p>{message}</p>
-      <p className="help-text">현재 계산 가능한 {cashLabel}: {ranked.count}개</p>
+      <p className="sr-only">현재 계산 가능한 {cashLabel}: {ranked.count}개</p>
     </div>
+    {results.length === 0 && <div className="empty-results">
+      <Icon name="exchange" />
+      <h3>환전 조건을 먼저 알려주세요.</h3>
+      <p>여행지와 금액을 입력하면<br />여기에서 예상 수령액을 확인할 수 있어요.</p>
+      <div className="empty-methods"><span>국내 은행</span><span>현지 환전소</span><span>이중환전</span></div>
+    </div>}
     {ranked.count >= 1 && <p className="scope-note">{sameCurrency ? "원화로 시작하는 방법끼리 비교해요. " : ""}입력한 환율과 이용 가능한 방법만 비교해요.</p>}
     <div className="result-list">
       {ranked.main.map((route) => {
@@ -57,10 +72,12 @@ export default function ComparisonResults({ results, localCode, fxCode, midLocal
           <div className="result-method">
             {route.rank !== null && <span className="rank-badge">{joint ? "공동 " : ""}{route.rank}위</span>}
             <h3>{titles[route.key]}{route.key === "double" && <InfoTooltip label="이중 환전 설명">한국에서 원화를 달러·유로로 바꾼 다음, 여행지에서 쓸 돈으로 한 번 더 바꾸는 방법이에요.</InfoTooltip>}</h3>
+            {route.isBest && <span className="best-label">최대 수령</span>}
           </div>
+          <p className="route-path">{paths[route.key]}</p>
           {route.local !== null ? <>
             <p className="receipt">{formatAmount(route.local, localCode)} <span className="receipt-currency">{localCode}</span></p>
-            {route.isBest && <p className="recommendation">✓ 입력한 조건에서 가장 많이 받아요.</p>}
+            {route.isBest && <p className="recommendation"><Icon name="check" />입력한 조건에서 가장 많이 받아요.</p>}
             {ranked.count >= 2 && percent !== null && percent > 0 && <div className="result-difference">
               <p>최대 수령액보다 {percent < 0.01 ? "0.01% 미만" : `${percent.toFixed(2)}%`} 적음</p>
               {won !== null && <p className="help-text">약 {formatAmount(won, "KRW")}원 차이

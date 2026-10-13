@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { CITIES, cityById } from "@/data/cities";
+import Icon from "./Icon";
 
 const RECENT_KEY = "exchange-recent-cities-v1";
 const QUICK_IDS = ["tokyo", "osaka", "bangkok", "danang", "taipei", "cebu"];
@@ -51,6 +52,7 @@ export default function DestinationPicker({ cityId, onSelect, onDirect }: {
       if (!event.currentTarget.contains(event.relatedTarget)) { setOpen(false); setActive(-1); }
     }}>
       <label htmlFor={id} className="field-label">여행 도시</label>
+      <div className="search-field"><Icon name="search" />
       <input id={id} className="text-input" role="combobox" type="search" autoComplete="off"
         placeholder="도시명 또는 국가명 검색" value={query} aria-autocomplete="list"
         aria-expanded={open} aria-controls={`${id}-results`}
@@ -66,7 +68,7 @@ export default function DestinationPicker({ cityId, onSelect, onDirect }: {
           } else if (event.key === "Enter" && open && active >= 0 && matches[active]) {
             event.preventDefault(); choose(matches[active].id);
           } else if (event.key === "Escape") { setOpen(false); setActive(-1); }
-        }} />
+        }} /></div>
       {open && <div className="search-popup">
         <ul id={`${id}-results`} role="listbox" aria-label="여행 도시 검색 결과">
           {matches.map((item, index) => <li id={`${id}-option-${index}`} key={item.id} role="option"
@@ -83,6 +85,6 @@ export default function DestinationPicker({ cityId, onSelect, onDirect }: {
     {chips(QUICK_IDS, "빠른 선택")}
     <button type="button" className="text-button" onClick={() => {
       setOpen(false); setQuery(""); onDirect();
-    }}>통화로 직접 선택 <span aria-hidden="true">→</span></button>
+    }}>통화로 직접 선택 <Icon name="arrow" /></button>
   </div>;
 }

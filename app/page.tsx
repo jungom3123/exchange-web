@@ -10,6 +10,7 @@ import FloatingInfo from "@/components/FloatingInfo";
 import InfoTooltip from "@/components/InfoTooltip";
 import DestinationPicker from "@/components/DestinationPicker";
 import ComparisonResults from "@/components/ComparisonResults";
+import Icon from "@/components/Icon";
 
 type Rates = Record<string, { mid: number; source: string }>;
 const HOLDINGS = [
@@ -79,16 +80,22 @@ export default function Home() {
   };
 
   return <main className="app-shell">
-    <header className="app-header">
-      <div>
-        <p className="eyebrow">환전 어디서?</p>
-        <h1>여행지에서 받을 돈을<br className="mobile-break" /> 비교해 보세요.</h1>
-        <p className="header-description">가진 돈과 여행지를 고르고, 환전소에 표시된 환율을 입력하세요.</p>
-      </div>
-      <button type="button" className="theme-button" onClick={toggleTheme} aria-label="다크모드" aria-pressed={dark}>
-        <span aria-hidden="true">{dark ? "☀" : "☾"}</span>
+    <header className="brand-bar">
+      <div className="brand"><Icon name="exchange" /><span>환전 어디서?</span><span className="brand-caption">여행 환전 계산기</span></div>
+      <button type="button" className="theme-button" onClick={toggleTheme} aria-label={dark ? "라이트 모드로 전환" : "다크 모드로 전환"}>
+        <Icon name={dark ? "sun" : "moon"} /><span aria-hidden="true">{dark ? "라이트 모드" : "다크 모드"}</span>
       </button>
     </header>
+    <div className="app-header">
+      <div>
+        <p className="eyebrow">여행 준비, 환전부터 가볍게</p>
+        <h1>같은 돈, <span>더 많이 받는 환전.</span></h1>
+        <p className="header-description">은행부터 현지 환전소까지, 받을 금액으로 비교하세요.</p>
+      </div>
+      <ol className="flow-overview" aria-label="환전 비교 순서">
+        <li><span>01</span> 조건 선택</li><li><span>02</span> 환율 입력</li><li><span>03</span> 수령액 비교</li>
+      </ol>
+    </div>
     <div className="rate-status-bar">
       {loading ? <p role="status">환율을 불러오고 있어요.</p>
         : rateError ? <p className="error-text" role="status">환율을 불러오지 못했어요. 잠시 후 새로고침해 주세요.</p>
@@ -98,7 +105,7 @@ export default function Home() {
 
     <div className="comparison-layout">
       <div className="input-panel">
-        <p className="eyebrow">내 환전 조건</p>
+        <div className="panel-heading"><span className="step-number">01</span><h2>내 환전 조건</h2></div>
         <fieldset className="input-section">
           <legend className="section-title">어떤 돈을 환전하나요?</legend>
           <div className="holding-options">
@@ -123,7 +130,7 @@ export default function Home() {
             <option value="">통화를 선택해 주세요</option>
             {CURRENCIES.map((item) => <option key={item.code} value={item.code}>{item.nameKo} ({item.code})</option>)}
           </select>
-          {local && <p className="destination-confirmation">{city ? `${city.nameKo}에서 쓸 돈` : "여행지에서 쓸 돈"}: {local.nameKo}({local.code})</p>}
+          {local && <p className="destination-confirmation"><Icon name="check" />{city ? `${city.nameKo}에서 쓸 돈` : "여행지에서 쓸 돈"}: {local.nameKo}({local.code})</p>}
         </section>
 
         <section className="input-section" aria-labelledby="amount-title">
@@ -141,8 +148,8 @@ export default function Home() {
         </section>
 
         {local && <section className="input-section rate-section" aria-labelledby="rates-title">
-          <h2 id="rates-title" className="section-title">환전소에 표시된 환율</h2>
-          <p className="help-text">알고 있는 환율만 입력하세요.</p>
+          <div className="panel-heading"><span className="step-number">02</span><h2 id="rates-title">환전소 환율 입력</h2><span className="optional-label">선택</span></div>
+          <p className="help-text">알고 있는 환율을 넣으면 바로 비교해요.</p>
           <p className="buying-guide">내가 내는 돈의 <strong>Buying / We Buy</strong> 환율을 확인하세요.
             <InfoTooltip label="Buying과 Selling 설명">달러를 내고 바트를 받는다면 Buying USD를 확인하세요. Selling은 환전소가 그 통화를 파는 환율이에요.</InfoTooltip>
           </p>
@@ -165,12 +172,13 @@ export default function Home() {
           </div>}
         </section>}
 
-        <div className="mobile-results-jump">
+        <div className="results-action">
           <button type="button" className="primary-button" disabled={readyCount === 0} onClick={() => {
             resultsHeading.current?.focus({ preventScroll: true });
             resultsHeading.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
-          }}>비교 결과 보기 <span aria-hidden="true">↓</span></button>
+          }}>비교 결과 보기 <Icon name="arrow" /></button>
           {readyCount === 0 && <p className="help-text">{pending}</p>}
+          {readyCount > 0 && <p className="action-note">입력한 조건으로 자동 계산됩니다.</p>}
         </div>
       </div>
 
@@ -182,7 +190,7 @@ export default function Home() {
     </div>
 
     {city && <section className="travel-tips" aria-labelledby="tips-title">
-      <div className="tips-heading"><h2 id="tips-title">{city.nameKo} 환전 팁</h2><span className="tip-badge">{CASH_LEVEL_LABEL[city.cashNeedLevel].label}</span>
+      <div className="tips-heading"><Icon name="pin" /><h2 id="tips-title">{city.nameKo} 환전 팁</h2><span className="tip-badge">{CASH_LEVEL_LABEL[city.cashNeedLevel].label}</span>
         {city.krwAccepted !== null && <span className="tip-badge">KRW 현찰 환전 {city.krwAccepted ? "일반적" : "제한적"}</span>}</div>
       <ul>{city.tips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>
       {city.knownBooths && <div className="known-booths"><h3>알려진 환전소</h3>

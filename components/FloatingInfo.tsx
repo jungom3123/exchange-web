@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from "react";
 import { currencyByCode, formatRate } from "@/lib/config";
 import { cashSellRate, cashBuyRate } from "@/lib/calc";
 import InfoTooltip from "./InfoTooltip";
+import Icon from "./Icon";
 
 // 결과 아래의 환율 정보. 기존 3개월 그래프와 접기/펼치기를 유지한다.
 export default function FloatingInfo({
@@ -77,10 +78,10 @@ export default function FloatingInfo({
           aria-controls={contentId}
           className="rate-info-toggle"
         >
-          <span>
-            {local.flag} {baseCode}/{localCode} 환율 정보
+          <span className="rate-info-label"><Icon name="chart" />
+            {baseCode}/{localCode} 환율 정보
           </span>
-          <span className="text-gray-400">{open ? "▾" : "▸"}</span>
+          <Icon name="chevron" className={open ? "chevron-open" : ""} />
         </button>
         {open && (
           <div id={contentId} className="rate-info-content space-y-3">
@@ -91,7 +92,7 @@ export default function FloatingInfo({
                 <span className="muted"> / 1 {localCode}</span>
                 {change != null && (
                   <span className={`ml-1.5 text-xs ${change >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                    {change >= 0 ? "▲" : "▼"}{Math.abs(change).toFixed(2)}%
+                    전일 대비 {change >= 0 ? "+" : "−"}{Math.abs(change).toFixed(2)}%
                   </span>
                 )}
               </span>
@@ -101,7 +102,7 @@ export default function FloatingInfo({
             {series && series.length > 1 ? (
               <Chart series={series} />
             ) : (
-              <div className="h-[72px] flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800 text-sm muted">
+              <div className="chart-placeholder">
                 {baseCode === localCode ? "같은 통화는 환율이 1이에요." : chartSupported && !chartError ? "그래프를 불러오고 있어요." : chartError ? "그래프를 불러오지 못했어요." : `${localCode}는 그래프를 제공하지 않아요.`}
               </div>
             )}
@@ -114,7 +115,7 @@ export default function FloatingInfo({
 
             {/* 하나은행 현찰 환율 (KRW 기준) */}
             {spread != null && (
-              <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 space-y-1.5">
+              <div className="bank-rate-detail space-y-1.5">
                 <div className="rate-info-row">
                   <span className="font-medium">하나은행 현찰 (우대 적용)</span>
                   <span>
@@ -153,7 +154,7 @@ function Chart({ series }: { series: { date: string; v: number }[] }) {
     .join(" ");
   const up = vs[vs.length - 1] >= vs[0];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="최근 3개월 환율 추이" className="w-full rounded-lg bg-gray-50 dark:bg-gray-800">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="최근 3개월 환율 추이" className="rate-chart">
       <polyline
         points={pts}
         fill="none"
